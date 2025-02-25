@@ -48,15 +48,17 @@ enemy_image = pygame.transform.scale(enemy_image, (enemy_size, enemy_size))  # �
 # Загрузка звука потери жизни
 lose_life_sound = pygame.mixer.Sound("lose_life.mp3.wav")  # Замените на путь к вашему звуку
 
-# Загрузка анимации игрока
-walk_right_sprites = [pygame.image.load(f"walk_right_{i}.png").convert_alpha() for i in
-                      range(1, 4)]  # Изображения для движения вправо
-walk_left_sprites = [pygame.image.load(f"walk_left_{i}.png").convert_alpha() for i in
-                     range(1, 4)]  # Изображения для движения влево
-walk_up_sprites = [pygame.image.load(f"walk_up_{i}.png").convert_alpha() for i in
-                   range(1, 4)]  # Изображения для движения вверх
-walk_down_sprites = [pygame.image.load(f"walk_down_{i}.png").convert_alpha() for i in
-                     range(1, 4)]  # Изображения для движения вниз
+def load_and_scale_sprites(sprite_names, scale_factor):
+    return [pygame.transform.scale(pygame.image.load(name).convert_alpha(),
+                                    (int(pygame.image.load(name).get_width() * scale_factor),
+                                     int(pygame.image.load(name).get_height() * scale_factor)))
+            for name in sprite_names]
+
+scale_factor = 2  # Увеличиваем в 2 раза
+walk_right_sprites = load_and_scale_sprites([f"walk_right_{i}.png" for i in range(1, 4)], scale_factor)
+walk_left_sprites = load_and_scale_sprites([f"walk_left_{i}.png" for i in range(1, 4)], scale_factor)
+walk_up_sprites = load_and_scale_sprites([f"walk_up_{i}.png" for i in range(1, 4)], scale_factor)
+walk_down_sprites = load_and_scale_sprites([f"walk_down_{i}.png" for i in range(1, 4)], scale_factor)
 
 # Параметры анимации
 current_frame = 0
