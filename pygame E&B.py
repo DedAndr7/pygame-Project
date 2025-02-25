@@ -16,6 +16,10 @@ WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
+YELLOW = (255, 255, 0)
+CYAN = (0, 255, 255)
+ORANGE = (255, 165, 0)
+PURPLE = (128, 0, 128)
 
 # Параметры игрока
 player_size = 30
@@ -32,9 +36,6 @@ enemies = []
 # Загрузка изображений врага
 enemy_image = pygame.image.load("enemy_image.png").convert_alpha()  # Замените на путь к вашему изображению врага
 enemy_image = pygame.transform.scale(enemy_image, (enemy_size, enemy_size))  # Изменяем размер изображения
-
-heart_image = pygame.image.load("heart.png").convert_alpha()  # Замените на путь к вашему изображению сердца
-heart_image = pygame.transform.scale(heart_image, (30, 30))  # Изменяем размер изображения сердца
 
 # Загрузка звука потери жизни
 lose_life_sound = pygame.mixer.Sound("lose_life.mp3.wav")  # Замените на путь к вашему звуку
@@ -104,16 +105,42 @@ def load_high_score():
 
 # Функция для создания врагов
 def create_enemy():
+    enemy_type = random.choice(["normal", "zigzag", "fast", "chaser", "spawner", "jumper"])
     x_pos = random.randint(0, WIDTH - enemy_size)
     y_pos = 0
-    enemies.append([x_pos, y_pos])
+    color = random.choice([RED, GREEN, BLUE, YELLOW, CYAN, ORANGE, PURPLE])  # Random color for the enemy circle
+    enemies.append([x_pos, y_pos, enemy_type, color])
 
 
-# Обновление позиции врагов
+# Функция для обновления позиции врагов
 def update_enemies():
     global score
     for enemy in enemies:
-        enemy[1] += enemy_speed
+        if enemy[2] == "normal":
+            enemy[1] += enemy_speed
+        elif enemy[2] == "zigzag":
+            enemy[1] += enemy_speed
+            enemy[0] += random.choice([-1, 1]) * enemy_speed  # Move in zigzag pattern
+        elif enemy[2] == "fast":
+            enemy[1] += enemy_speed * 2  # Fast movement
+        elif enemy[2] == "chaser":
+            if player_pos[0] < enemy[0]:
+                enemy[0] -= enemy_speed // 2
+            elif player_pos[0] > enemy[0]:
+                enemy[0] += enemy_speed // 2
+            if player_pos[1] < enemy[1]:
+                enemy[1] -= enemy_speed // 2
+            elif player_pos[1] > enemy[1]:
+                enemy[1] += enemy_speed // 2
+        elif enemy[2] == "spawner":
+            enemy[1] += enemy_speed
+            if random.randint(1, 100) == 1:  # Spawn a new enemy from this enemy
+                create_enemy()
+        elif enemy[2] == "jumper":
+            if random.randint(1, 100) == 1:  # Jump at a random moment
+                enemy[1] -= 50
+            else:
+                enemy[1] += enemy_speed
         if enemy[1] > HEIGHT:
             enemies.remove(enemy)
             score += 1
@@ -236,23 +263,23 @@ def game_loop():
                 sys.exit()
 
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_LEFT] and player_pos[0] > 0:
+        if keys[pygame.K_a] and player_pos[0] > 0:
             player_pos[0] -= player_speed
             direction = "left"
-        if keys[pygame.K_RIGHT] and player_pos[0] < WIDTH - player_size:
+        if keys[pygame.K_d] and player_pos[0] < WIDTH - player_size:
             player_pos[0] += player_speed
             direction = "right"
-        if keys[pygame.K_UP] and player_pos[1] > 0:
+        if keys[pygame.K_w] and player_pos[1] > 0:
             player_pos[1] -= player_speed
             direction = "up"
-        if keys[pygame.K_DOWN] and player_pos[1] < HEIGHT - player_size:
+        if keys[pygame.K_s] and player_pos[1] < HEIGHT - player_size:
             player_pos[1] += player_speed
             direction = "down"
 
         update_enemies()
 
         for enemy in enemies:
-            if check_collision(player_pos, enemy):
+            if check_collision(player_pos, enemy[:2]):
                 lives -= 1  # Уменьшаем количество жизней
                 lose_life_sound.play()  # Проигрываем звук потери жизни
                 if lives == 0:  # Если жизни кончились
@@ -285,13 +312,13 @@ def game_loop():
         elif direction == "down":
             screen.blit(walk_down_sprites[current_frame], (player_pos[0], player_pos[1]))
 
-        # Рисуем врагов с использованием изображения
+        # Рисуем врагов как цветные круги
         for enemy in enemies:
-            screen.blit(enemy_image, (enemy[0], enemy[1]))
+            pygame.draw.circle(screen, enemy[3], (enemy[0], enemy[1]), enemy_size // 2)
 
         # Отображение жизней
         for i in range(lives):
-            screen.blit(heart_image, (10 + i * 35, HEIGHT - 40))  # Рисуем сердца в левом нижнем углу
+            pygame.draw.rect(screen, RED, pygame.Rect(10 + i * 35, HEIGHT - 40, 30, 30))  # Рисуем жизни
 
         # Отображение счёта
         score_text = font.render("Счёт: " + str(score), True, GREEN)
@@ -319,4 +346,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
