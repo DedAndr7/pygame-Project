@@ -27,6 +27,14 @@ player_pos = [WIDTH // 2, HEIGHT // 2]
 player_speed = 5
 lives = 3  # Количество жизней
 
+# Параметры бонусов
+BONUS_SIZE = 45
+shield_active = False
+shield_duration = 0
+speed_boost_active = False
+speed_boost_duration = 0
+bonuses = []
+
 # Параметры врагов
 enemy_size = 30
 enemy_spawn_rate = 20  # Вероятность появления врагов
@@ -103,12 +111,109 @@ def load_high_score():
     return 0
 
 
+# Создание бонусов
+def create_bonus():
+    bonus_type = random.choice(["shield", "speed_boost"])
+    x_pos = random.randint(0, WIDTH - BONUS_SIZE)
+    y_pos = 0
+    color = random.choice([CYAN, ORANGE])  # Цвет для бонусов (можно использовать фиксированные цвета для бонусов)
+
+    if bonus_type == "shield":
+        bonuses.append([x_pos, y_pos, bonus_type, (0, 0, 139)])  # Темно-синий цвет для щита
+    elif bonus_type == "speed_boost":
+        bonuses.append([x_pos, y_pos, bonus_type, (128, 0, 128)])  # Фиолетовый цвет для ускорения
+
+
+# Обновление бонусов
+# Update bonuses (unchanged)
+def update_bonuses():
+    global shield_active, shield_duration, speed_boost_active, speed_boost_duration
+
+    for bonus in bonuses:
+        bonus[1] += 3  # Move bonuses down the screen
+
+        # Check for collision with player
+        if check_collision(player_pos, bonus[:2]):
+            if bonus[2] == "shield":
+                shield_active = True
+                shield_duration = 300
+            elif bonus[2] == "speed_boost":
+                speed_boost_active = True
+                speed_boost_duration = 300
+            bonuses.remove(bonus)
+
+        if bonus[1] > HEIGHT:
+            bonuses.remove(bonus)
+
+    if shield_active:
+        shield_duration -= 1
+        if shield_duration <= 0:
+            shield_active = False
+
+    if speed_boost_active:
+        speed_boost_duration -= 1
+        if speed_boost_duration <= 0:
+            speed_boost_active = False
+
+
+def draw_bonuses():
+    for bonus in bonuses:
+        # Check the type of bonus and draw accordingly
+        if bonus[2] == "shield":
+            # Dark blue box for shield
+            pygame.draw.rect(screen, (0, 0, 139), pygame.Rect(bonus[0], bonus[1], BONUS_SIZE, BONUS_SIZE // 2))
+
+        elif bonus[2] == "speed_boost":
+            # Purple box for speed boost
+            pygame.draw.rect(screen, (128, 0, 128), pygame.Rect(bonus[0], bonus[1], BONUS_SIZE, BONUS_SIZE // 2))
+
+
+
+# Обновление скорости игрока
+def update_player_speed():
+    global player_speed
+    if speed_boost_active:
+        player_speed = 8  # Увеличенная скорость
+    else:
+        player_speed = 5  # Обычная скорость
+
+# Функция создания бонуса
+def create_bonus():
+    # Генерация случайных координат для бонуса
+    x = random.randint(0, WIDTH - BONUS_SIZE)
+    y = random.randint(0, HEIGHT - BONUS_SIZE)
+
+    # Случайный выбор типа бонуса (например, "shield" или "speed_boost")
+    bonus_type = random.choice(["shield", "speed_boost"])
+
+    # Добавление бонуса в список
+    bonuses.append([x, y, bonus_type])
+
+
+# Создание бонусов на старте
+def create_bonuses_on_start():
+    for _ in range(5):  # Примерное количество бонусов на старте
+        create_bonus()
+
+
 # Функция для создания врагов
 def create_enemy():
     enemy_type = random.choice(["normal", "zigzag", "fast", "chaser", "spawner", "jumper"])
     x_pos = random.randint(0, WIDTH - enemy_size)
     y_pos = 0
-    color = random.choice([RED, GREEN, BLUE, YELLOW, CYAN, ORANGE, PURPLE])  # Random color for the enemy circle
+
+    # Assign a unique color based on enemy type
+    enemy_colors = {
+        "normal": RED,
+        "zigzag": GREEN,
+        "fast": BLUE,
+        "chaser": YELLOW,
+        "spawner": CYAN,
+        "jumper": ORANGE
+    }
+
+    color = enemy_colors.get(enemy_type, PURPLE)  # Default to PURPLE if no match is found
+
     enemies.append([x_pos, y_pos, enemy_type, color])
 
 
@@ -238,23 +343,24 @@ def end_screen():
                     sys.exit()
 
 
-# Основной игровой цикл
 def game_loop():
-    global player_pos, score, enemies, current_frame, frame_counter, enemy_speed, enemy_spawn_rate, lives
+    global player_pos, score, enemies, current_frame, frame_counter, enemy_speed, enemy_spawn_rate, lives, bonuses, player_speed, shield_active
     player_pos = [WIDTH // 2, HEIGHT // 2]
     score = 0
-    lives = 3  # Обнуляем жизни
-    enemies.clear()  # Очищаем список врагов
+    lives = 3
+    enemies.clear()
+    bonuses = []  # Ensure bonuses list is initialized
 
-    direction = "right"  # Направление движения игрока
+    direction = "right"
 
-    # Настройка параметров врагов в зависимости от уровня сложности
     if game_level == "easy":
-        enemy_speed = 3  # Враги движутся медленнее
-        enemy_spawn_rate = 30  # Враги появляются реже
+        enemy_speed = 3
+        enemy_spawn_rate = 30
     else:  # "hard"
-        enemy_speed = 6  # Враги движутся быстрее
-        enemy_spawn_rate = 15  # Враги появляются чаще
+        enemy_speed = 6
+        enemy_spawn_rate = 15
+
+    clock = pygame.time.Clock()  # Initialize clock once
 
     while True:
         for event in pygame.event.get():
@@ -277,32 +383,27 @@ def game_loop():
             direction = "down"
 
         update_enemies()
+        update_bonuses()  # Update bonuses
+        update_player_speed()  # Update player speed
 
+        # Handle collisions with enemies
         for enemy in enemies:
             if check_collision(player_pos, enemy[:2]):
-                lives -= 1  # Уменьшаем количество жизней
-                lose_life_sound.play()  # Проигрываем звук потери жизни
-                if lives == 0:  # Если жизни кончились
-                    save_score(score)  # Сохранение счёта перед окончанием игры
-                    end_screen()  # Переход к оконцу окончания игры
+                if shield_active:
+                    enemies.remove(enemy)
+                else:
+                    lives -= 1
+                    lose_life_sound.play()
+                    if lives == 0:
+                        save_score(score)
+                        end_screen()
+                    enemies.remove(enemy)
+                break
 
-                enemies.remove(enemy)  # Убираем врага, который столкнулся с игроком
-                break  # Прерываем цикл, чтобы избежать повторных столкновений
-
-        # Обновляем анимацию
-        frame_counter += 1
-        if frame_counter >= frame_rate:
-            current_frame = (current_frame + 1) % len(walk_right_sprites) if direction == "right" else \
-                (current_frame + 1) % len(walk_left_sprites) if direction == "left" else \
-                (current_frame + 1) % len(walk_up_sprites) if direction == "up" else \
-                (current_frame + 1) % len(walk_down_sprites)
-
-            frame_counter = 0
-
-        # Рисуем фон
+        # Draw everything
         screen.blit(background, (0, 0))
 
-        # Рисуем игрока с анимацией в зависимости от направления
+        # Draw player based on direction
         if direction == "right":
             screen.blit(walk_right_sprites[current_frame], (player_pos[0], player_pos[1]))
         elif direction == "left":
@@ -312,21 +413,24 @@ def game_loop():
         elif direction == "down":
             screen.blit(walk_down_sprites[current_frame], (player_pos[0], player_pos[1]))
 
-        # Рисуем врагов как цветные круги
+        # Draw enemies
         for enemy in enemies:
             pygame.draw.circle(screen, enemy[3], (enemy[0], enemy[1]), enemy_size // 2)
 
-        # Отображение жизней
-        for i in range(lives):
-            pygame.draw.rect(screen, RED, pygame.Rect(10 + i * 35, HEIGHT - 40, 30, 30))  # Рисуем жизни
+        # Draw bonuses
+        draw_bonuses()
 
-        # Отображение счёта
+        # Draw lives
+        for i in range(lives):
+            pygame.draw.rect(screen, RED, pygame.Rect(10 + i * 35, HEIGHT - 40, 30, 30))
+
+        # Display score
         score_text = font.render("Счёт: " + str(score), True, GREEN)
         screen.blit(score_text, (10, 10))
 
-        # Обновляем экран
         pygame.display.flip()
-        pygame.time.Clock().tick(30)
+        clock.tick(30)  # Limiting frame rate
+
 
 
 # Запускаем игру
