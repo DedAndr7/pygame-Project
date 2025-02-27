@@ -177,14 +177,29 @@ def update_bonuses():
 
 
 # Рисуем бонусы
+# Рисуем бонусы
 def draw_bonuses():
     for bonus in bonuses:
         if bonus[2] == "shield":
-            # Рисуем бонус для щита (используя спрайт)
+            # Рисуем бонус для щита
             screen.blit(shield_image, (bonus[0], bonus[1]))
         elif bonus[2] == "speed_boost":
-            # Рисуем бонус для ускорения (используя спрайт)
+            # Рисуем бонус для ускорения
             screen.blit(boost_image, (bonus[0], bonus[1]))
+
+# Отображаем таймер для бонусов
+def draw_bonus_timer():
+    # Таймер для щита
+    if shield_active:
+        timer_text = font.render(f"Щит: {shield_duration // 60}", True, BLUE)  # Показываем оставшееся время в секундах
+        screen.blit(timer_text, (WIDTH - 150, HEIGHT - 40))  # Отображаем таймер щита справа внизу
+
+    # Таймер для ускорения
+    if speed_boost_active:
+        timer_text = font.render(f"УСКР: {speed_boost_duration // 60}", True, RED)  # Показываем оставшееся время в секундах
+        screen.blit(timer_text, (WIDTH - 150, HEIGHT - 70))  # Отображаем таймер ускорения чуть выше
+
+
 
 
 def update_player_speed():
@@ -204,21 +219,23 @@ def update_bonuses():
     global shield_active, shield_duration, speed_boost_active, speed_boost_duration
 
     for bonus in bonuses:
-        bonus[1] += 3  # Move bonuses down the screen
+        bonus[1] += 3  # Двигаем бонус вниз
 
-        # Check for collision with player
+        # Проверка на столкновение с игроком
         if check_collision(player_pos, bonus[:2]):
             if bonus[2] == "shield":
                 shield_active = True
-                shield_duration = 300
+                shield_duration = 300  # Примерно 5 секунд (300 кадров)
             elif bonus[2] == "speed_boost":
                 speed_boost_active = True
-                speed_boost_duration = 300  # Устанавливаем продолжительность ускорения (например, 300 кадров)
+                speed_boost_duration = 300  # Примерно 5 секунд (300 кадров)
             bonuses.remove(bonus)
 
+        # Если бонус выходит за пределы экрана, удаляем его
         if bonus[1] > HEIGHT:
             bonuses.remove(bonus)
 
+    # Окончание действия бонусов
     if shield_active:
         shield_duration -= 1
         if shield_duration <= 0:
@@ -229,6 +246,8 @@ def update_bonuses():
         if speed_boost_duration <= 0:
             speed_boost_active = False
 
+# Рисуем игрока
+# Рисуем игрока
 def draw_player(direction):
     global current_frame
     if direction == "right":
@@ -239,6 +258,13 @@ def draw_player(direction):
         screen.blit(walk_up_sprites[current_frame], (player_pos[0], player_pos[1]))
     elif direction == "down":
         screen.blit(walk_down_sprites[current_frame], (player_pos[0], player_pos[1]))
+
+    # Нарисовать голубую окружность, если щит активен (смещаем вправо и вниз)
+    if shield_active:
+        pygame.draw.circle(screen, (0, 191, 255), (player_pos[0] + player_size // 2 + 15, player_pos[1] + player_size // 2 + 15),
+                           player_size * 1.5, 3)  # Голубая окружность вокруг кота, смещена вправо и вниз
+
+
 
 
 # Создание бонусов на старте
@@ -481,6 +507,9 @@ def game_loop():
 
         # Рисуем бонусы
         draw_bonuses()
+
+        # Отображаем таймер для бонусов
+        draw_bonus_timer()
 
         # Отображаем жизни
         for i in range(lives):
