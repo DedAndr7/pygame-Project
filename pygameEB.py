@@ -41,6 +41,9 @@ enemy_spawn_rate = 20  # Вероятность появления врагов
 enemy_speed = 5
 enemies = []
 
+heart_image = pygame.image.load("heart.png").convert_alpha()  # Замените на путь к вашему изображению сердца
+heart_image = pygame.transform.scale(heart_image, (30, 30))  # Изменяем размер изображения сердца
+
 # Загрузка изображений врага
 enemy_image = pygame.image.load("enemy_image.png").convert_alpha()  # Замените на путь к вашему изображению врага
 enemy_image = pygame.transform.scale(enemy_image, (enemy_size, enemy_size))  # Изменяем размер изображения
@@ -422,9 +425,9 @@ def game_loop():
         # Draw bonuses
         draw_bonuses()
 
-        # Draw lives
+        # Отображение жизней
         for i in range(lives):
-            pygame.draw.rect(screen, RED, pygame.Rect(10 + i * 35, HEIGHT - 40, 30, 30))
+            screen.blit(heart_image, (10 + i * 35, HEIGHT - 40))  # Рисуем сердца в левом нижнем углу
 
         # Display score
         score_text = font.render("Счёт: " + str(score), True, GREEN)
