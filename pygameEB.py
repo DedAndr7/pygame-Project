@@ -405,6 +405,17 @@ def game_loop():
                     enemies.remove(enemy)
                 break
 
+                # Обновляем анимацию
+        frame_counter += 1
+        if frame_counter >= frame_rate:
+            current_frame = (current_frame + 1) % len(walk_right_sprites) if direction == "right" else \
+                (current_frame + 1) % len(walk_left_sprites) if direction == "left" else \
+                    (current_frame + 1) % len(walk_up_sprites) if direction == "up" else \
+                        (current_frame + 1) % len(walk_down_sprites)
+
+            frame_counter = 0
+
+
         # Draw everything
         screen.blit(background, (0, 0))
 
