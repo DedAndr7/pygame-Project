@@ -79,6 +79,11 @@ background = pygame.image.load("background.png").convert()
 # Переменная для уровня сложности
 game_level = "easy"  # По умолчанию уровень легкий
 
+# Параметры ускорения
+speed_boost_active = False  # Флаг ускорения
+speed_boost_duration = 0    # Время ускорения (в кадрах)
+speed_boost_multiplier = 2  # Множитель скорости (например, в 2 раза быстрее)
+
 
 # Подключение к БД
 def init_db():
@@ -117,20 +122,73 @@ def load_high_score():
 
 
 # Создание бонусов
+# Функция создания бонусов
 def create_bonus():
-    bonus_type = random.choice(["shield", "speed_boost"])
     x_pos = random.randint(0, WIDTH - BONUS_SIZE)
-    y_pos = 0
-    color = random.choice([CYAN, ORANGE])  # Цвет для бонусов (можно использовать фиксированные цвета для бонусов)
+    y_pos = 0  # Бонус будет появляться сверху
+    bonus_type = random.choice(["shield", "speed_boost"])
 
-    if bonus_type == "shield":
-        bonuses.append([x_pos, y_pos, bonus_type, (0, 0, 139)])  # Темно-синий цвет для щита
-    elif bonus_type == "speed_boost":
-        bonuses.append([x_pos, y_pos, bonus_type, (128, 0, 128)])  # Фиолетовый цвет для ускорения
+    # Добавляем бонус в список
+    bonuses.append([x_pos, y_pos, bonus_type])
 
 
 # Обновление бонусов
-# Update bonuses (unchanged)
+def update_bonuses():
+    global shield_active, shield_duration, speed_boost_active, speed_boost_duration
+
+    for bonus in bonuses:
+        bonus[1] += 3  # Двигаем бонус вниз
+
+        # Проверка на столкновение с игроком
+        if check_collision(player_pos, bonus[:2]):
+            if bonus[2] == "shield":
+                shield_active = True
+                shield_duration = 300  # Примерно 5 секунд (300 кадров)
+            elif bonus[2] == "speed_boost":
+                speed_boost_active = True
+                speed_boost_duration = 300  # Примерно 5 секунд (300 кадров)
+            bonuses.remove(bonus)
+
+        # Если бонус выходит за пределы экрана, удаляем его
+        if bonus[1] > HEIGHT:
+            bonuses.remove(bonus)
+
+    # Окончание действия бонусов
+    if shield_active:
+        shield_duration -= 1
+        if shield_duration <= 0:
+            shield_active = False
+
+    if speed_boost_active:
+        speed_boost_duration -= 1
+        if speed_boost_duration <= 0:
+            speed_boost_active = False
+
+
+# Рисуем бонусы
+def draw_bonuses():
+    for bonus in bonuses:
+        if bonus[2] == "shield":
+            # Рисуем бонус для щита
+            pygame.draw.rect(screen, (0, 0, 139), pygame.Rect(bonus[0], bonus[1], BONUS_SIZE, BONUS_SIZE // 2))
+        elif bonus[2] == "speed_boost":
+            # Рисуем бонус для ускорения
+            pygame.draw.rect(screen, (128, 0, 128), pygame.Rect(bonus[0], bonus[1], BONUS_SIZE, BONUS_SIZE // 2))
+
+
+def update_player_speed():
+    global player_speed, speed_boost_active, speed_boost_duration
+    if speed_boost_active:
+        player_speed = 10  # Увеличиваем скорость в 2 раза (или любой другой множитель)
+        speed_boost_duration -= 1  # Уменьшаем продолжительность ускорения
+        if speed_boost_duration <= 0:
+            speed_boost_active = False  # Останавливаем ускорение, когда время истечет
+    else:
+        player_speed = 5  # Обычная скорость
+
+
+
+
 def update_bonuses():
     global shield_active, shield_duration, speed_boost_active, speed_boost_duration
 
@@ -144,7 +202,7 @@ def update_bonuses():
                 shield_duration = 300
             elif bonus[2] == "speed_boost":
                 speed_boost_active = True
-                speed_boost_duration = 300
+                speed_boost_duration = 300  # Устанавливаем продолжительность ускорения (например, 300 кадров)
             bonuses.remove(bonus)
 
         if bonus[1] > HEIGHT:
@@ -160,39 +218,16 @@ def update_bonuses():
         if speed_boost_duration <= 0:
             speed_boost_active = False
 
-
-def draw_bonuses():
-    for bonus in bonuses:
-        # Check the type of bonus and draw accordingly
-        if bonus[2] == "shield":
-            # Dark blue box for shield
-            pygame.draw.rect(screen, (0, 0, 139), pygame.Rect(bonus[0], bonus[1], BONUS_SIZE, BONUS_SIZE // 2))
-
-        elif bonus[2] == "speed_boost":
-            # Purple box for speed boost
-            pygame.draw.rect(screen, (128, 0, 128), pygame.Rect(bonus[0], bonus[1], BONUS_SIZE, BONUS_SIZE // 2))
-
-
-
-# Обновление скорости игрока
-def update_player_speed():
-    global player_speed
-    if speed_boost_active:
-        player_speed = 8  # Увеличенная скорость
-    else:
-        player_speed = 5  # Обычная скорость
-
-# Функция создания бонуса
-def create_bonus():
-    # Генерация случайных координат для бонуса
-    x = random.randint(0, WIDTH - BONUS_SIZE)
-    y = random.randint(0, HEIGHT - BONUS_SIZE)
-
-    # Случайный выбор типа бонуса (например, "shield" или "speed_boost")
-    bonus_type = random.choice(["shield", "speed_boost"])
-
-    # Добавление бонуса в список
-    bonuses.append([x, y, bonus_type])
+def draw_player(direction):
+    global current_frame
+    if direction == "right":
+        screen.blit(walk_right_sprites[current_frame], (player_pos[0], player_pos[1]))
+    elif direction == "left":
+        screen.blit(walk_left_sprites[current_frame], (player_pos[0], player_pos[1]))
+    elif direction == "up":
+        screen.blit(walk_up_sprites[current_frame], (player_pos[0], player_pos[1]))
+    elif direction == "down":
+        screen.blit(walk_down_sprites[current_frame], (player_pos[0], player_pos[1]))
 
 
 # Создание бонусов на старте
@@ -354,8 +389,9 @@ def game_loop():
     score = 0
     lives = 3
     enemies.clear()
-    bonuses = []  # Ensure bonuses list is initialized
+    bonuses = []  # Убедитесь, что бонусы очищаются перед игрой
 
+    # Начальный direction
     direction = "right"
 
     if game_level == "easy":
@@ -365,15 +401,21 @@ def game_loop():
         enemy_speed = 6
         enemy_spawn_rate = 15
 
-    clock = pygame.time.Clock()  # Initialize clock once
+    clock = pygame.time.Clock()
 
     while True:
+        # Генерация бонусов
+        if random.randint(1, 200) == 1:  # Можно регулировать частоту появления бонусов
+            create_bonus()
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
 
         keys = pygame.key.get_pressed()
+
+        # Движение игрока
         if keys[pygame.K_a] and player_pos[0] > 0:
             player_pos[0] -= player_speed
             direction = "left"
@@ -387,9 +429,10 @@ def game_loop():
             player_pos[1] += player_speed
             direction = "down"
 
+        # Обновление врагов и бонусов
         update_enemies()
-        update_bonuses()  # Update bonuses
-        update_player_speed()  # Update player speed
+        update_bonuses()  # Обновляем бонусы
+        update_player_speed()  # Обновление скорости игрока
 
         # Handle collisions with enemies
         for enemy in enemies:
@@ -405,7 +448,7 @@ def game_loop():
                     enemies.remove(enemy)
                 break
 
-                # Обновляем анимацию
+        # Обновляем анимацию
         frame_counter += 1
         if frame_counter >= frame_rate:
             current_frame = (current_frame + 1) % len(walk_right_sprites) if direction == "right" else \
@@ -415,39 +458,29 @@ def game_loop():
 
             frame_counter = 0
 
-
-        # Draw everything
+        # Отображаем всё на экране
         screen.blit(background, (0, 0))
 
-        # Draw player based on direction
-        if direction == "right":
-            screen.blit(walk_right_sprites[current_frame], (player_pos[0], player_pos[1]))
-        elif direction == "left":
-            screen.blit(walk_left_sprites[current_frame], (player_pos[0], player_pos[1]))
-        elif direction == "up":
-            screen.blit(walk_up_sprites[current_frame], (player_pos[0], player_pos[1]))
-        elif direction == "down":
-            screen.blit(walk_down_sprites[current_frame], (player_pos[0], player_pos[1]))
+        # Рисуем игрока
+        draw_player(direction)  # Передаем direction в draw_player()
 
-        # Draw enemies
+        # Рисуем врагов
         for enemy in enemies:
             pygame.draw.circle(screen, enemy[3], (enemy[0], enemy[1]), enemy_size // 2)
 
-        # Draw bonuses
+        # Рисуем бонусы
         draw_bonuses()
 
-        # Отображение жизней
+        # Отображаем жизни
         for i in range(lives):
-            screen.blit(heart_image, (10 + i * 35, HEIGHT - 40))  # Рисуем сердца в левом нижнем углу
+            screen.blit(heart_image, (10 + i * 35, HEIGHT - 40))
 
-        # Display score
+        # Отображаем счёт
         score_text = font.render("Счёт: " + str(score), True, GREEN)
         screen.blit(score_text, (10, 10))
 
         pygame.display.flip()
-        clock.tick(30)  # Limiting frame rate
-
-
+        clock.tick(30)
 
 # Запускаем игру
 def main():
