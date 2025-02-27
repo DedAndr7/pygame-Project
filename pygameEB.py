@@ -48,6 +48,17 @@ heart_image = pygame.transform.scale(heart_image, (30, 30))  # Изменяем 
 enemy_image = pygame.image.load("enemy_image.png").convert_alpha()  # Замените на путь к вашему изображению врага
 enemy_image = pygame.transform.scale(enemy_image, (enemy_size, enemy_size))  # Изменяем размер изображения
 
+# Загрузка изображений бонусов
+shield_image = pygame.image.load("shield.png").convert_alpha()  # Замените на путь к вашему изображению щита
+boost_image = pygame.image.load("boost.png").convert_alpha()  # Замените на путь к вашему изображению ускорения
+
+# Изменим размер изображений для бонусов
+BONUS_SCALE = 0.1  # Множитель для изменения размера (например, 10% от исходного размера)
+shield_image = pygame.transform.scale(shield_image, (int(shield_image.get_width() * BONUS_SCALE),
+                                                     int(shield_image.get_height() * BONUS_SCALE)))
+boost_image = pygame.transform.scale(boost_image, (int(boost_image.get_width() * BONUS_SCALE),
+                                                    int(boost_image.get_height() * BONUS_SCALE)))
+
 # Загрузка звука потери жизни
 lose_life_sound = pygame.mixer.Sound("lose_life.mp3.wav")  # Замените на путь к вашему звуку
 
@@ -169,11 +180,11 @@ def update_bonuses():
 def draw_bonuses():
     for bonus in bonuses:
         if bonus[2] == "shield":
-            # Рисуем бонус для щита
-            pygame.draw.rect(screen, (0, 0, 139), pygame.Rect(bonus[0], bonus[1], BONUS_SIZE, BONUS_SIZE // 2))
+            # Рисуем бонус для щита (используя спрайт)
+            screen.blit(shield_image, (bonus[0], bonus[1]))
         elif bonus[2] == "speed_boost":
-            # Рисуем бонус для ускорения
-            pygame.draw.rect(screen, (128, 0, 128), pygame.Rect(bonus[0], bonus[1], BONUS_SIZE, BONUS_SIZE // 2))
+            # Рисуем бонус для ускорения (используя спрайт)
+            screen.blit(boost_image, (bonus[0], bonus[1]))
 
 
 def update_player_speed():
