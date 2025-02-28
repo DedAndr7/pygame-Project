@@ -41,16 +41,13 @@ enemy_spawn_rate = 20  # Вероятность появления врагов
 enemy_speed = 5
 enemies = []
 
-heart_image = pygame.image.load("heart.png").convert_alpha()  # Замените на путь к вашему изображению сердца
+heart_image = pygame.image.load("main_images/heart.png").convert_alpha()  # Замените на путь к вашему изображению сердца
 heart_image = pygame.transform.scale(heart_image, (30, 30))  # Изменяем размер изображения сердца
 
-# Загрузка изображений врага
-enemy_image = pygame.image.load("enemy_image.png").convert_alpha()  # Замените на путь к вашему изображению врага
-enemy_image = pygame.transform.scale(enemy_image, (enemy_size, enemy_size))  # Изменяем размер изображения
 
 # Загрузка изображений бонусов
-shield_image = pygame.image.load("shield.png").convert_alpha()  # Замените на путь к вашему изображению щита
-boost_image = pygame.image.load("boost.png").convert_alpha()  # Замените на путь к вашему изображению ускорения
+shield_image = pygame.image.load("boosts/shield.png").convert_alpha()  # Замените на путь к вашему изображению щита
+boost_image = pygame.image.load("boosts/boost.png").convert_alpha()  # Замените на путь к вашему изображению ускорения
 
 # Изменим размер изображений для бонусов
 BONUS_SCALE = 0.1  # Множитель для изменения размера (например, 10% от исходного размера)
@@ -69,10 +66,10 @@ def load_and_scale_sprites(sprite_names, scale_factor):
             for name in sprite_names]
 
 scale_factor = 2  # Увеличиваем в 2 раза
-walk_right_sprites = load_and_scale_sprites([f"walk_right_{i}.png" for i in range(1, 4)], scale_factor)
-walk_left_sprites = load_and_scale_sprites([f"walk_left_{i}.png" for i in range(1, 4)], scale_factor)
-walk_up_sprites = load_and_scale_sprites([f"walk_up_{i}.png" for i in range(1, 4)], scale_factor)
-walk_down_sprites = load_and_scale_sprites([f"walk_down_{i}.png" for i in range(1, 4)], scale_factor)
+walk_right_sprites = load_and_scale_sprites([f"image_cat/walk_right_{i}.png" for i in range(1, 4)], scale_factor)
+walk_left_sprites = load_and_scale_sprites([f"image_cat/walk_left_{i}.png" for i in range(1, 4)], scale_factor)
+walk_up_sprites = load_and_scale_sprites([f"image_cat/walk_up_{i}.png" for i in range(1, 4)], scale_factor)
+walk_down_sprites = load_and_scale_sprites([f"image_cat/walk_down_{i}.png" for i in range(1, 4)], scale_factor)
 
 # Параметры анимации
 current_frame = 0
@@ -85,7 +82,7 @@ high_score = 0  # Переменная для хранения лучшего с
 font = pygame.font.SysFont("monospace", 35)
 
 # Загрузка фонового изображения
-background = pygame.image.load("background.png").convert()
+background = pygame.image.load("main_images/background.png").convert()
 
 # Переменная для уровня сложности
 game_level = "easy"  # По умолчанию уровень легкий
@@ -176,7 +173,7 @@ def update_bonuses():
             speed_boost_active = False
 
 
-# Рисуем бонусы
+
 # Рисуем бонусы
 def draw_bonuses():
     for bonus in bonuses:
@@ -529,7 +526,7 @@ def main():
     high_score = load_high_score()  # Загрузка лучшего счёта
 
     # Загрузка и воспроизведение музыки
-    pygame.mixer.music.load("background_music.mp3")
+    pygame.mixer.music.load("music/background_music.mp3")
     pygame.mixer.music.set_volume(0.5)  # Устанавливаем громкость (от 0.0 до 1.0)
     pygame.mixer.music.play(-1)  # Воспроизводим музыку бесконечно
 
