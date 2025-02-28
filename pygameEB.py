@@ -89,10 +89,7 @@ background = pygame.image.load("main_images/background.png").convert()
 # Переменная для уровня сложности
 game_level = "easy"  # По умолчанию уровень легкий
 
-# Параметры ускорения
-speed_boost_active = False  # Флаг ускорения
-speed_boost_duration = 0    # Время ускорения (в кадрах)
-speed_boost_multiplier = 2  # Множитель скорости (например, в 2 раза быстрее)
+
 
 
 # Подключение к БД
@@ -152,36 +149,9 @@ def create_bonus():
     # Добавляем бонус в список
     bonuses.append([x_pos, y_pos, bonus_type])
 
-def update_bonuses():
-    global shield_active, shield_duration, speed_boost_active, speed_boost_duration
-    global bonus_creation_timer
 
-    # Увеличиваем счетчик для создания бонусов
-    bonus_creation_timer += 1
-
-    # Каждые BONUS_CREATION_INTERVAL кадров появляется новый бонус
-    if bonus_creation_timer >= BONUS_CREATION_INTERVAL:
-        create_bonus()  # Создаем бонус
-        bonus_creation_timer = 0  # Сбрасываем таймер
-
-    for bonus in bonuses:
-        bonus[1] += 3  # Двигаем бонус вниз
-
-        # Проверка на столкновение с игроком
-        if check_collision(player_pos, bonus[:2]):
-            if bonus[2] == "shield":
-                shield_active = True
-                shield_duration = 300  # Примерно 5 секунд (300 кадров)
-            elif bonus[2] == "speed_boost":
-                speed_boost_active = True
-                speed_boost_duration = 300  # Примерно 5 секунд (300 кадров)
-            bonuses.remove(bonus)
-
-        # Если бонус выходит за пределы экрана, удаляем его
-        if bonus[1] > HEIGHT:
-            bonuses.remove(bonus)
-
-    # Окончание действия бонусов
+# Функция для обновления бонусов с параметрами
+def update_bonuses(shield_active, shield_duration, speed_boost_active, speed_boost_duration):
     if shield_active:
         shield_duration -= 1
         if shield_duration <= 0:
@@ -191,6 +161,15 @@ def update_bonuses():
         speed_boost_duration -= 1
         if speed_boost_duration <= 0:
             speed_boost_active = False
+
+    return shield_active, shield_duration, speed_boost_active, speed_boost_duration
+
+
+# Использование
+shield_active, shield_duration, speed_boost_active, speed_boost_duration = update_bonuses(
+    shield_active, shield_duration, speed_boost_active, speed_boost_duration
+)
+
 
 # Функция создания бонусов на старте
 def create_bonuses_on_start():
