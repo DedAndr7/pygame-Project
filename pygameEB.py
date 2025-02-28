@@ -56,6 +56,8 @@ shield_image = pygame.transform.scale(shield_image, (int(shield_image.get_width(
 boost_image = pygame.transform.scale(boost_image, (int(boost_image.get_width() * BONUS_SCALE),
                                                     int(boost_image.get_height() * BONUS_SCALE)))
 
+game_paused = False  # Переменная для отслеживания состояния паузы
+
 # Загрузка звука потери жизни
 lose_life_sound = pygame.mixer.Sound("lose_life.mp3.wav")  # Замените на путь к вашему звуку
 
@@ -130,7 +132,18 @@ def load_high_score():
 
 
 # Создание бонусов
-# Функция создания бонусов
+def draw_bonuses():
+    for bonus in bonuses:
+        if bonus[2] == "shield":
+            screen.blit(shield_image, (bonus[0], bonus[1]))
+        elif bonus[2] == "speed_boost":
+            screen.blit(boost_image, (bonus[0], bonus[1]))
+
+# Функция для создания бонусов с редкой вероятностью
+# Счетчик кадров для создания бонусов
+bonus_creation_timer = 0
+BONUS_CREATION_INTERVAL = 120  # Количество кадров до появления нового бонуса
+
 def create_bonus():
     x_pos = random.randint(0, WIDTH - BONUS_SIZE)
     y_pos = 0  # Бонус будет появляться сверху
@@ -139,10 +152,17 @@ def create_bonus():
     # Добавляем бонус в список
     bonuses.append([x_pos, y_pos, bonus_type])
 
-
-# Обновление бонусов
 def update_bonuses():
     global shield_active, shield_duration, speed_boost_active, speed_boost_duration
+    global bonus_creation_timer
+
+    # Увеличиваем счетчик для создания бонусов
+    bonus_creation_timer += 1
+
+    # Каждые BONUS_CREATION_INTERVAL кадров появляется новый бонус
+    if bonus_creation_timer >= BONUS_CREATION_INTERVAL:
+        create_bonus()  # Создаем бонус
+        bonus_creation_timer = 0  # Сбрасываем таймер
 
     for bonus in bonuses:
         bonus[1] += 3  # Двигаем бонус вниз
@@ -172,17 +192,11 @@ def update_bonuses():
         if speed_boost_duration <= 0:
             speed_boost_active = False
 
+# Функция создания бонусов на старте
+def create_bonuses_on_start():
+    for _ in range(1):  # Примерное количество бонусов на старте
+        create_bonus()
 
-
-# Рисуем бонусы
-def draw_bonuses():
-    for bonus in bonuses:
-        if bonus[2] == "shield":
-            # Рисуем бонус для щита
-            screen.blit(shield_image, (bonus[0], bonus[1]))
-        elif bonus[2] == "speed_boost":
-            # Рисуем бонус для ускорения
-            screen.blit(boost_image, (bonus[0], bonus[1]))
 
 # Отображаем таймер для бонусов
 def draw_bonus_timer():
@@ -212,8 +226,13 @@ def update_player_speed():
 
 
 
+# Функция для обновления бонусов
 def update_bonuses():
     global shield_active, shield_duration, speed_boost_active, speed_boost_duration
+
+    # Уменьшаем вероятность появления бонуса
+    if random.randint(1, 300) == 1:  # Уменьшаем вероятность появления бонуса (например, 1 из 100)
+        create_bonus()  # Создаем бонус
 
     for bonus in bonuses:
         bonus[1] += 3  # Двигаем бонус вниз
@@ -243,7 +262,7 @@ def update_bonuses():
         if speed_boost_duration <= 0:
             speed_boost_active = False
 
-# Рисуем игрока
+
 # Рисуем игрока
 def draw_player(direction):
     global current_frame
@@ -262,13 +281,16 @@ def draw_player(direction):
                            player_size * 1.5, 3)  # Голубая окружность вокруг кота, смещена вправо и вниз
 
 
+def toggle_pause():
+    global game_paused
+    game_paused = not game_paused
 
 
-# Создание бонусов на старте
-def create_bonuses_on_start():
-    for _ in range(5):  # Примерное количество бонусов на старте
-        create_bonus()
-
+# Функция для отображения паузы
+def draw_pause_screen():
+    pause_text = font.render("Пауза! Нажмите пробел для продолжения", True, GREEN)
+    screen.blit(pause_text, (WIDTH // 2 - pause_text.get_width() // 2, HEIGHT // 2 - 50))
+    pygame.display.flip()
 
 # Функция для создания врагов
 def create_enemy():
@@ -418,15 +440,12 @@ def end_screen():
 
 
 def game_loop():
-    global player_pos, score, enemies, current_frame, frame_counter, enemy_speed, enemy_spawn_rate, lives, bonuses, player_speed, shield_active
+    global player_pos, score, enemies, current_frame, frame_counter, enemy_speed, enemy_spawn_rate, lives, bonuses, player_speed, shield_active, game_paused
     player_pos = [WIDTH // 2, HEIGHT // 2]
     score = 0
     lives = 3
     enemies.clear()
-    bonuses = []  # Убедитесь, что бонусы очищаются перед игрой
-
-    # Начальный direction
-    direction = "right"
+    bonuses = []  # Очистка бонусов перед началом игры
 
     if game_level == "easy":
         enemy_speed = 3
@@ -435,13 +454,14 @@ def game_loop():
         enemy_speed = 6
         enemy_spawn_rate = 15
 
+    # Создаем бонусы на старте
+    create_bonuses_on_start()
+
     clock = pygame.time.Clock()
+    space_pressed = False  # Флаг для предотвращения многократных нажатий пробела
+    direction = "right"  # Начальное направление
 
     while True:
-        # Генерация бонусов
-        if random.randint(1, 200) == 1:  # Можно регулировать частоту появления бонусов
-            create_bonus()
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
@@ -449,6 +469,22 @@ def game_loop():
 
         keys = pygame.key.get_pressed()
 
+        # Проверка на пробел для паузы/продолжения
+        if keys[pygame.K_SPACE]:
+            if not space_pressed:  # Если пробел только что был нажат
+                toggle_pause()  # Переключаем состояние паузы
+                space_pressed = True  # Устанавливаем флаг
+
+        if not keys[pygame.K_SPACE]:
+            space_pressed = False  # Если пробел больше не удерживается, сбрасываем флаг
+
+        if game_paused:
+            # Когда игра на паузе, рисуем экран паузы
+            draw_pause_screen()
+            pygame.display.flip()
+            continue  # Если игра на паузе, пропускаем остальную логику
+
+        # Если игра не на паузе:
         # Движение игрока
         if keys[pygame.K_a] and player_pos[0] > 0:
             player_pos[0] -= player_speed
@@ -463,12 +499,16 @@ def game_loop():
             player_pos[1] += player_speed
             direction = "down"
 
-        # Обновление врагов и бонусов
+        # Обновляем врагов и бонусы
         update_enemies()
-        update_bonuses()  # Обновляем бонусы
-        update_player_speed()  # Обновление скорости игрока
+        update_bonuses()
+        update_player_speed()
 
-        # Handle collisions with enemies
+        # Периодически создаём бонусы
+        if random.randint(1, 100) == 1:  # На самом деле здесь можно настроить вероятность появления
+            create_bonus()
+
+        # Обработка столкновений с врагами
         for enemy in enemies:
             if check_collision(player_pos, enemy[:2]):
                 if shield_active:
@@ -485,18 +525,21 @@ def game_loop():
         # Обновляем анимацию
         frame_counter += 1
         if frame_counter >= frame_rate:
-            current_frame = (current_frame + 1) % len(walk_right_sprites) if direction == "right" else \
-                (current_frame + 1) % len(walk_left_sprites) if direction == "left" else \
-                    (current_frame + 1) % len(walk_up_sprites) if direction == "up" else \
-                        (current_frame + 1) % len(walk_down_sprites)
-
+            if direction == "right":
+                current_frame = (current_frame + 1) % len(walk_right_sprites)
+            elif direction == "left":
+                current_frame = (current_frame + 1) % len(walk_left_sprites)
+            elif direction == "up":
+                current_frame = (current_frame + 1) % len(walk_up_sprites)
+            elif direction == "down":
+                current_frame = (current_frame + 1) % len(walk_down_sprites)
             frame_counter = 0
 
         # Отображаем всё на экране
         screen.blit(background, (0, 0))
 
         # Рисуем игрока
-        draw_player(direction)  # Передаем direction в draw_player()
+        draw_player(direction)  # Передаем текущее направление
 
         # Рисуем врагов
         for enemy in enemies:
@@ -505,7 +548,7 @@ def game_loop():
         # Рисуем бонусы
         draw_bonuses()
 
-        # Отображаем таймер для бонусов
+        # Рисуем таймер для бонусов
         draw_bonus_timer()
 
         # Отображаем жизни
