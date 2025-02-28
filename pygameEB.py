@@ -3,7 +3,6 @@ import random
 import sys
 import sqlite3
 
-# Инициализация Pygame
 pygame.init()
 
 # Настройки окна
@@ -41,22 +40,19 @@ enemy_spawn_rate = 20  # Вероятность появления врагов
 enemy_speed = 5
 enemies = []
 
-heart_image = pygame.image.load("main_images/heart.png").convert_alpha()  # Замените на путь к вашему изображению сердца
-heart_image = pygame.transform.scale(heart_image, (30, 30))  # Изменяем размер изображения сердца
-
+heart_image = pygame.image.load("main_images/heart.png").convert_alpha()
+heart_image = pygame.transform.scale(heart_image, (30, 30))
 
 # Загрузка изображений бонусов
-shield_image = pygame.image.load("boosts/shield.png").convert_alpha()  # Замените на путь к вашему изображению щита
-boost_image = pygame.image.load("boosts/boost.png").convert_alpha()  # Замените на путь к вашему изображению ускорения
+shield_image = pygame.image.load("boosts/shield.png").convert_alpha()
+boost_image = pygame.image.load("boosts/boost.png").convert_alpha()
 
 # Изменим размер изображений для бонусов
-BONUS_SCALE = 0.1  # Множитель для изменения размера (например, 10% от исходного размера)
+BONUS_SCALE = 0.1
 shield_image = pygame.transform.scale(shield_image, (int(shield_image.get_width() * BONUS_SCALE),
                                                      int(shield_image.get_height() * BONUS_SCALE)))
 boost_image = pygame.transform.scale(boost_image, (int(boost_image.get_width() * BONUS_SCALE),
                                                     int(boost_image.get_height() * BONUS_SCALE)))
-
-game_paused = False  # Переменная для отслеживания состояния паузы
 
 # Загрузка звука потери жизни
 lose_life_sound = pygame.mixer.Sound("lose_life.mp3.wav")  # Замените на путь к вашему звуку
@@ -87,10 +83,9 @@ font = pygame.font.SysFont("monospace", 35)
 background = pygame.image.load("main_images/background.png").convert()
 
 # Переменная для уровня сложности
-game_level = "easy"  # По умолчанию уровень легкий
+game_level = "easy"
 
-
-
+game_paused = False  # Переменная для отслеживания состояния паузы
 
 # Подключение к БД
 def init_db():
@@ -136,8 +131,7 @@ def draw_bonuses():
         elif bonus[2] == "speed_boost":
             screen.blit(boost_image, (bonus[0], bonus[1]))
 
-# Функция для создания бонусов с редкой вероятностью
-# Счетчик кадров для создания бонусов
+# По кадрам
 bonus_creation_timer = 0
 BONUS_CREATION_INTERVAL = 120  # Количество кадров до появления нового бонуса
 
@@ -146,11 +140,10 @@ def create_bonus():
     y_pos = 0  # Бонус будет появляться сверху
     bonus_type = random.choice(["shield", "speed_boost"])
 
-    # Добавляем бонус в список
     bonuses.append([x_pos, y_pos, bonus_type])
 
 
-# Функция для обновления бонусов с параметрами
+# Обновление бонусов с параметрами
 def update_bonuses(shield_active, shield_duration, speed_boost_active, speed_boost_duration):
     if shield_active:
         shield_duration -= 1
@@ -171,13 +164,13 @@ shield_active, shield_duration, speed_boost_active, speed_boost_duration = updat
 )
 
 
-# Функция создания бонусов на старте
+# Создание бонусов на старте
 def create_bonuses_on_start():
     for _ in range(1):  # Примерное количество бонусов на старте
         create_bonus()
 
 
-# Отображаем таймер для бонусов
+# Таймер для бонусов
 def draw_bonus_timer():
     # Таймер для щита
     if shield_active:
@@ -187,7 +180,7 @@ def draw_bonus_timer():
     # Таймер для ускорения
     if speed_boost_active:
         timer_text = font.render(f"УСКР: {speed_boost_duration // 60}", True, RED)  # Показываем оставшееся время в секундах
-        screen.blit(timer_text, (WIDTH - 150, HEIGHT - 70))  # Отображаем таймер ускорения чуть выше
+        screen.blit(timer_text, (WIDTH - 150, HEIGHT - 70))  # Отображаем таймер ускорения
 
 
 
@@ -195,7 +188,7 @@ def draw_bonus_timer():
 def update_player_speed():
     global player_speed, speed_boost_active, speed_boost_duration
     if speed_boost_active:
-        player_speed = 10  # Увеличиваем скорость в 2 раза (или любой другой множитель)
+        player_speed = 10  # Увеличиваем скорость в 2 раза
         speed_boost_duration -= 1  # Уменьшаем продолжительность ускорения
         if speed_boost_duration <= 0:
             speed_boost_active = False  # Останавливаем ускорение, когда время истечет
@@ -205,12 +198,12 @@ def update_player_speed():
 
 
 
-# Функция для обновления бонусов
+# Обновление бонусов
 def update_bonuses():
     global shield_active, shield_duration, speed_boost_active, speed_boost_duration
 
-    # Уменьшаем вероятность появления бонуса
-    if random.randint(1, 300) == 1:  # Уменьшаем вероятность появления бонуса (например, 1 из 100)
+    # Вероятность появления бонуса
+    if random.randint(1, 300) == 1:
         create_bonus()  # Создаем бонус
 
     for bonus in bonuses:
@@ -220,10 +213,10 @@ def update_bonuses():
         if check_collision(player_pos, bonus[:2]):
             if bonus[2] == "shield":
                 shield_active = True
-                shield_duration = 300  # Примерно 5 секунд (300 кадров)
+                shield_duration = 300  # Примерно 5 секунд
             elif bonus[2] == "speed_boost":
                 speed_boost_active = True
-                speed_boost_duration = 300  # Примерно 5 секунд (300 кадров)
+                speed_boost_duration = 300  # Примерно 5 секунд
             bonuses.remove(bonus)
 
         # Если бонус выходит за пределы экрана, удаляем его
@@ -254,10 +247,10 @@ def draw_player(direction):
     elif direction == "down":
         screen.blit(walk_down_sprites[current_frame], (player_pos[0], player_pos[1]))
 
-    # Нарисовать голубую окружность, если щит активен (смещаем вправо и вниз)
+    # Рисуем щит
     if shield_active:
         pygame.draw.circle(screen, (0, 191, 255), (player_pos[0] + player_size // 2 + 15, player_pos[1] + player_size // 2 + 15),
-                           player_size * 1.5, 3)  # Голубая окружность вокруг кота, смещена вправо и вниз
+                           player_size * 1.5, 3)
 
 
 def toggle_pause():
@@ -265,19 +258,18 @@ def toggle_pause():
     game_paused = not game_paused
 
 
-# Функция для отображения паузы
+# Отображение паузы
 def draw_pause_screen():
     pause_text = font.render("Пауза! Нажмите пробел для продолжения", True, GREEN)
     screen.blit(pause_text, (WIDTH // 2 - pause_text.get_width() // 2, HEIGHT // 2 - 50))
     pygame.display.flip()
 
-# Функция для создания врагов
+# Создание врагов
 def create_enemy():
     enemy_type = random.choice(["normal", "zigzag", "fast", "chaser", "spawner", "jumper"])
     x_pos = random.randint(0, WIDTH - enemy_size)
     y_pos = 0
 
-    # Assign a unique color based on enemy type
     enemy_colors = {
         "normal": RED,
         "zigzag": GREEN,
@@ -287,12 +279,12 @@ def create_enemy():
         "jumper": ORANGE
     }
 
-    color = enemy_colors.get(enemy_type, PURPLE)  # Default to PURPLE if no match is found
+    color = enemy_colors.get(enemy_type, PURPLE)
 
     enemies.append([x_pos, y_pos, enemy_type, color])
 
 
-# Функция для обновления позиции врагов
+# Обновление позиции врагов
 def update_enemies():
     global score
     for enemy in enemies:
@@ -300,9 +292,9 @@ def update_enemies():
             enemy[1] += enemy_speed
         elif enemy[2] == "zigzag":
             enemy[1] += enemy_speed
-            enemy[0] += random.choice([-1, 1]) * enemy_speed  # Move in zigzag pattern
+            enemy[0] += random.choice([-1, 1]) * enemy_speed  # Зигзаг
         elif enemy[2] == "fast":
-            enemy[1] += enemy_speed * 2  # Fast movement
+            enemy[1] += enemy_speed * 2  # Быстрый
         elif enemy[2] == "chaser":
             if player_pos[0] < enemy[0]:
                 enemy[0] -= enemy_speed // 2
@@ -314,10 +306,10 @@ def update_enemies():
                 enemy[1] += enemy_speed // 2
         elif enemy[2] == "spawner":
             enemy[1] += enemy_speed
-            if random.randint(1, 100) == 1:  # Spawn a new enemy from this enemy
+            if random.randint(1, 100) == 1:
                 create_enemy()
         elif enemy[2] == "jumper":
-            if random.randint(1, 100) == 1:  # Jump at a random moment
+            if random.randint(1, 100) == 1:  # Прыгующий
                 enemy[1] -= 50
             else:
                 enemy[1] += enemy_speed
@@ -328,7 +320,7 @@ def update_enemies():
         create_enemy()
 
 
-# Функция для проверки столкновений
+# Проверка столкновений
 def check_collision(player_poss, enemy_pos):
     p_x, p_y = player_poss
     e_x, e_y = enemy_pos
@@ -338,7 +330,7 @@ def check_collision(player_poss, enemy_pos):
     return False
 
 
-# Функция выбора уровня сложности
+# Выбор уровня сложности
 def level_selection():
     global game_level
     while True:
@@ -366,7 +358,7 @@ def level_selection():
                     return
 
 
-# Функция начального окна
+# Начальное окно
 def start_screen():
     while True:
         screen.blit(background, (0, 0))
@@ -386,7 +378,7 @@ def start_screen():
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 level_selection()  # Переход к выбору уровня сложности
-                return  # Переход к игровому циклу
+                return
 
 
 # Функция конечного окна
@@ -437,7 +429,7 @@ def game_loop():
     create_bonuses_on_start()
 
     clock = pygame.time.Clock()
-    space_pressed = False  # Флаг для предотвращения многократных нажатий пробела
+    space_pressed = False  # Флаг для пробела
     direction = "right"  # Начальное направление
 
     while True:
@@ -450,20 +442,20 @@ def game_loop():
 
         # Проверка на пробел для паузы/продолжения
         if keys[pygame.K_SPACE]:
-            if not space_pressed:  # Если пробел только что был нажат
-                toggle_pause()  # Переключаем состояние паузы
-                space_pressed = True  # Устанавливаем флаг
+            if not space_pressed:
+                toggle_pause()
+                space_pressed = True
 
         if not keys[pygame.K_SPACE]:
-            space_pressed = False  # Если пробел больше не удерживается, сбрасываем флаг
+            space_pressed = False
 
         if game_paused:
-            # Когда игра на паузе, рисуем экран паузы
+            # Рисуем экран паузы
             draw_pause_screen()
             pygame.display.flip()
-            continue  # Если игра на паузе, пропускаем остальную логику
+            continue
 
-        # Если игра не на паузе:
+
         # Движение игрока
         if keys[pygame.K_a] and player_pos[0] > 0:
             player_pos[0] -= player_speed
